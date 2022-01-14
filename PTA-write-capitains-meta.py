@@ -47,7 +47,7 @@ for source in sorted(xml_paths, reverse=False):
     os.chdir(os.path.expanduser('~/Dokumente/projekte/pta_data/'))
     label["urn"] = "urn:cts:pta:"+file_name.rsplit('.', 1)[0]
     try:
-        git = subprocess.check_output(['git', 'log', '-1', "--pretty=format:%H,%ad", "--date=short", "data/"+corpus_name+"/"+work_name+"/"+file_name]).decode("utf-8").split(",")
+        git = subprocess.check_output(['git', 'log', '-1', '--follow', "--pretty=format:%H,%ad", "--date=short", "data/"+corpus_name+"/"+work_name+"/"+file_name]).decode("utf-8").split(",")
         label["hash"] = git[0]
         label["date"] = git[1]
     except:

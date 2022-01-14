@@ -17,14 +17,15 @@
         <xsl:param name="title">
             <xsl:copy-of select="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title"/>
         </xsl:param>
-        <xsl:element name="ti:work" namespace="http://chs.harvard.edu/xmlns/cts">
+        <ti:work>
             <xsl:attribute name="groupUrn"><xsl:value-of select="$urn[1]"/></xsl:attribute>
-            <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body/tei:div/@xml:lang"/></xsl:attribute>
+            <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body//tei:div[@type='edition']/@xml:lang"/></xsl:attribute>
             <xsl:attribute name="urn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
-            <xsl:element name="ti:title" namespace="http://chs.harvard.edu/xmlns/cts">
+            <xsl:element name="ti:title">
                 <xsl:attribute name="xml:lang">lat</xsl:attribute>
                 <xsl:value-of select="$title"/>
             </xsl:element>
+            <xsl:call-template name="workMetadata"/>
             <xsl:for-each select="collection(concat($folderName, '?select=*.xml;on-error=ignore'))">
                 <xsl:if test="tokenize(document-uri(.), '/')[last()] != '__cts__.xml'">
                     <xsl:call-template name="createCTS">
@@ -32,7 +33,43 @@
                     </xsl:call-template>
                 </xsl:if>
             </xsl:for-each>
-        </xsl:element>
+        </ti:work>
+    </xsl:template>
+
+    <xsl:template name="workMetadata">
+      <xsl:param name="dateCreated">
+            <xsl:choose>
+                <xsl:when test="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@when">
+                    <xsl:value-of select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@when"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:value-of select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@notBefore"/>
+                    <xsl:text>–</xsl:text>
+                    <xsl:value-of select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@notAfter"/>
+                </xsl:otherwise>
+            </xsl:choose>
+      </xsl:param>
+      <xsl:param name="workmetadata">
+          <cpt:structured-metadata>
+            <dct:created><xsl:value-of select="$dateCreated"/></dct:created>
+            <dct:spatial>
+              <xsl:value-of select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:placeName/@ref"/>
+            </dct:spatial>
+            <xsl:for-each select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:textClass/tei:keywords/tei:term">
+              <dct:type><xsl:value-of select="normalize-space(.)"/></dct:type>
+            </xsl:for-each>
+            <xsl:for-each select="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:idno">
+              <xsl:if test="current() != ''">
+                <xsl:element name="dc:identifier">
+                  <xsl:value-of select="current()/@type"/>
+                  <xsl:text>:</xsl:text>
+                  <xsl:value-of select="current()"/>
+                </xsl:element>
+              </xsl:if>
+            </xsl:for-each>
+          </cpt:structured-metadata>
+      </xsl:param>
+      <xsl:copy-of select="$workmetadata"/>
     </xsl:template>
 
     <xsl:template name="createCTS">
@@ -154,13 +191,20 @@
                     <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                   </xsl:for-each>
                 </xsl:when>
-                <!-- new edition -->
+                <!-- new edition (or Bible) -->
                 <xsl:otherwise>
                     <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor">
-                    <xsl:value-of select="current()/tei:persName"/>
-                    <xsl:text> (</xsl:text>
-                    <xsl:value-of select="current()/tei:roleName"/>
-                    <xsl:text>)</xsl:text>
+                    <xsl:choose>
+                    <xsl:when test="current()/tei:persName">
+                    	<xsl:value-of select="current()/tei:persName"/>
+                    	<xsl:text> (</xsl:text>
+                    	<xsl:value-of select="current()/tei:roleName"/>
+                    	<xsl:text>)</xsl:text>
+                    </xsl:when>
+                    <xsl:otherwise>
+                    	<xsl:value-of select="current()"/>
+                    </xsl:otherwise>
+                    </xsl:choose>
                     <xsl:if test="current()/tei:orgName">
                       <xsl:text>, </xsl:text>
                       <xsl:value-of select="current()/tei:orgName"/>
@@ -188,19 +232,6 @@
                 </xsl:when>
                 <xsl:otherwise>
                   <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:date"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:param>
-
-        <xsl:param name="dateCreated">
-            <xsl:choose>
-                <xsl:when test="$textFile/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@when">
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@when"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@notBefore"/>
-                    <xsl:text>–</xsl:text>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:date/@notAfter"/>
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:param>
@@ -261,8 +292,8 @@
             </xsl:choose>
         </xsl:param>
         <xsl:param name="textURL">
-          <xsl:text>https://pta.bbaw.de/reader?left=</xsl:text>
-          <xsl:value-of select="translate(string-join($urn, '.'),':','-')"/>
+          <xsl:text>https://pta.bbaw.de/text/</xsl:text>
+          <xsl:value-of select="string-join($urn, '.')"/>
         </xsl:param>
         <xsl:param name="bibliographicCitation">
             <xsl:choose>
@@ -310,7 +341,17 @@
                 <dc:creator>
                   <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/tei:persName"/>
                 </dc:creator>
-                <dc:source><xsl:value-of select="$docSource"/></dc:source>
+                <dct:source>
+                  <xsl:choose>                
+                  <xsl:when test="$isManuscript = true()">
+                    <xsl:text>https://pta.bbaw.de/manuscripts/</xsl:text>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp"/>
+                  </xsl:when>
+                  <xsl:otherwise>
+                      <xsl:value-of select="$docSource"/>
+                  </xsl:otherwise>
+                  </xsl:choose>
+                </dct:source>
                 <dc:contributor><xsl:value-of select="$allEds"/></dc:contributor>
                 <dc:publisher xml:lang="eng">Patristic Text Archive (BBAW)</dc:publisher>
                 <dc:publisher xml:lang="deu">Patristisches Textarchiv (BBAW)</dc:publisher>
@@ -322,17 +363,10 @@
                 <dct:hasVersion><xsl:text>https://github.com/PatristicTextArchive/pta_data/blob/</xsl:text><xsl:value-of select="$gitHash"/><xsl:value-of select="substring-after($textURI,'data')"/></dct:hasVersion>
                 <xsl:if test="$hasCorresp = true()">
                   <dct:relation>
-                  <xsl:text>Translation from </xsl:text><xsl:value-of select="$textFile/tei:TEI/tei:text/tei:body/tei:div/@corresp"/>
+                        <xsl:value-of select="$textFile/tei:TEI/tei:text/tei:body/tei:div/@corresp"/>
                   </dct:relation>
                 </xsl:if>
                 <dc:date><xsl:value-of select="$lastModified"/></dc:date>
-                <dct:created><xsl:value-of select="$dateCreated"/></dct:created>
-                <dct:spatial>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:placeName/@ref"/>
-                </dct:spatial>
-                <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:profileDesc/tei:textClass/tei:keywords/tei:term">
-                  <dct:type><xsl:value-of select="normalize-space(.)"/></dct:type>
-                </xsl:for-each>
                 <dct:dateCopyrighted><xsl:value-of select="$dateCopyrighted"/></dct:dateCopyrighted>
                 <dct:bibliographicCitation><xsl:value-of select="$bibliographicCitation"/></dct:bibliographicCitation>
                 <dct:isPartOf><xsl:value-of select="$metacollection"/></dct:isPartOf>
@@ -362,7 +396,7 @@
                     <xsl:attribute name="workUrn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
                     <xsl:element name="ti:label" namespace="http://chs.harvard.edu/xmlns/cts">
                         <xsl:attribute name="xml:lang">eng</xsl:attribute>
-                                <xsl:value-of select="$markedUpTitle"/>
+                        <xsl:value-of select="$markedUpTitle"/>
                     </xsl:element>
                     <xsl:element name="ti:description" namespace="http://chs.harvard.edu/xmlns/cts">
                         <xsl:attribute name="xml:lang">eng</xsl:attribute>
