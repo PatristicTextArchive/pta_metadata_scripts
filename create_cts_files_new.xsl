@@ -262,7 +262,7 @@
                     <xsl:text>Neueditionen</xsl:text>
                 </xsl:if>
                 <!-- muss jeweils ergänzt werden -->
-                <xsl:if test="matches($textURI, 'pta0036|pta0037|pta0038|pta0003.pta001|pta0007.pta007')">
+                <xsl:if test="matches($textURI, 'pta0036|pta0037|pta0038|pta0003.pta001|pta0003.pta007|pta0003.pta009|pta0023.pta001|pta0007.pta007')">
                       <xsl:text>GCS-Retrodigitalisate</xsl:text>
                 </xsl:if>
         </xsl:param>
