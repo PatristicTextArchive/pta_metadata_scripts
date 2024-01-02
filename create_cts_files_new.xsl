@@ -132,7 +132,7 @@
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:biblScope"/>
                 </xsl:when>
                 <xsl:when test="$hasBiblStruct = true()">
-                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:listBibl[1]//tei:biblStruct">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:listBibl[1]//tei:biblStruct|$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:biblStruct">
                     <xsl:if test="current()/tei:analytic">
                       <xsl:if test="current()/tei:analytic/tei:editor">
                         <xsl:for-each select="current()/tei:analytic/tei:editor">
@@ -246,7 +246,7 @@
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:date"/>
                 </xsl:when>
                 <xsl:when test="$hasBiblStruct = true()">
-                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:listBibl[1]//tei:biblStruct">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:listBibl[1]//tei:biblStruct|$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:biblStruct">
                     <xsl:value-of select="current()/tei:monogr/tei:imprint/tei:date"/>
                     <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                    </xsl:for-each>
