@@ -23,7 +23,7 @@
             <xsl:attribute name="urn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
             <xsl:element name="ti:title">
                 <xsl:attribute name="xml:lang">lat</xsl:attribute>
-                <xsl:value-of select="$title"/>
+                <xsl:value-of select="tokenize(/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:title, ' \(', 'm')[1]"/>
             </xsl:element>
             <xsl:call-template name="workMetadata"/>
             <xsl:for-each select="collection(concat($folderName, '?select=*.xml;on-error=ignore'))">
@@ -86,10 +86,32 @@
         <xsl:param name="isTranslation"><xsl:value-of select="boolean($textFile/tei:TEI/tei:text/tei:body/tei:div/@type='translation')"/></xsl:param>
         <xsl:param name="hasCorresp"><xsl:value-of select="boolean($textFile/tei:TEI/tei:text/tei:body/tei:div/@corresp)"/></xsl:param>
         <xsl:param name="hasBiblStruct"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:biblStruct)"/></xsl:param>
-        <xsl:param name="hasBibl"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl)"/></xsl:param>
+        <xsl:param name="hasBibl"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl)"/></xsl:param>
         <xsl:param name="isNew"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:editionStmt/tei:p)"/></xsl:param>
+        <xsl:param name="hasEditor"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor)"/></xsl:param>
         <xsl:param name="docSource">
             <xsl:choose>
+              <!-- Case: Has an editor (= new edition) -->
+                <xsl:when test="$hasEditor = true()">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor">
+                    <xsl:choose>
+                    <xsl:when test="current()/tei:persName">
+                      <xsl:value-of select="current()/tei:persName"/>
+                      <xsl:text> (</xsl:text>
+                      <xsl:value-of select="current()/tei:roleName"/>
+                      <xsl:text>)</xsl:text>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="current()"/>
+                    </xsl:otherwise>
+                    </xsl:choose>
+                    <xsl:if test="current()/tei:orgName">
+                      <xsl:text>, </xsl:text>
+                      <xsl:value-of select="current()/tei:orgName"/>
+                    </xsl:if>
+                    <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                  </xsl:for-each>
+                </xsl:when>
               <!-- Case: Transcription -->
                 <xsl:when test="$isManuscript = true()">
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:settlement"/>
@@ -103,8 +125,8 @@
                 </xsl:when>
               <!-- Case: from book, either bibl or biblStruct -->
                 <xsl:when test="$hasBibl = true()">
-                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:editor">
-                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:editor">
+                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:editor">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:editor">
                     <xsl:value-of select="./tei:forename"/>
                     <xsl:text> </xsl:text>
                     <xsl:value-of select="./tei:surname|./tei:name"/>
@@ -112,8 +134,8 @@
                   </xsl:for-each>
                     <xsl:text> (ed.), </xsl:text>
                   </xsl:if>
-                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:author">
-                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:author">
+                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:author">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:author">
                     <xsl:value-of select="./tei:forename"/>
                     <xsl:text> </xsl:text>
                     <xsl:value-of select="./tei:surname|./tei:name"/>
@@ -121,18 +143,29 @@
                   </xsl:for-each>
                     <xsl:text>, </xsl:text>
                   </xsl:if>
-                    <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:title">
+                    <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:title">
                           <xsl:value-of select="."/>
                           <xsl:text>. </xsl:text>
                     </xsl:for-each>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:pubPlace"/>
+                    <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:pubPlace">
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:pubPlace"/>
                     <xsl:text> </xsl:text>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:date"/>
+                    </xsl:if>
+                    <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:publisher">
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:publisher"/>
+                    <xsl:text> </xsl:text>
+                    </xsl:if>
+                    <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:publisher[@ref]">
+                    <xsl:text>(</xsl:text>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:publisher[@ref]"/>
+                    <xsl:text>) </xsl:text>
+                    </xsl:if>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:date"/>
                     <xsl:text>, </xsl:text>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:biblScope"/>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:biblScope"/>
                 </xsl:when>
                 <xsl:when test="$hasBiblStruct = true()">
-                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:listBibl[1]//tei:biblStruct|$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:biblStruct">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:biblStruct[not(preceding-sibling::tei:head)]">
                     <xsl:if test="current()/tei:analytic">
                       <xsl:if test="current()/tei:analytic/tei:editor">
                         <xsl:for-each select="current()/tei:analytic/tei:editor">
@@ -239,14 +272,17 @@
 
         <xsl:param name="dateCopyrighted">
             <xsl:choose>
+                <xsl:when test="$hasEditor = true()">
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:date"/>
+                </xsl:when>
                 <xsl:when test="$isManuscript = true()">
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:date"/>
                 </xsl:when>
                 <xsl:when test="$hasBibl = true()">
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:date"/>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:date"/>
                 </xsl:when>
                 <xsl:when test="$hasBiblStruct = true()">
-                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:listBibl[1]//tei:biblStruct|$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:biblStruct">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:biblStruct[not(preceding-sibling::tei:head)]">
                     <xsl:value-of select="current()/tei:monogr/tei:imprint/tei:date"/>
                     <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                    </xsl:for-each>
@@ -262,7 +298,7 @@
                     <xsl:text>Neueditionen</xsl:text>
                 </xsl:if>
                 <!-- muss jeweils ergänzt werden -->
-                <xsl:if test="matches($textURI, 'pta0036|pta0037|pta0038|pta0003.pta001|pta0003.pta007|pta0003.pta009|pta0023.pta001|pta0007.pta007')">
+                <xsl:if test="matches($textURI, 'pta0012|pta0036|pta0037|pta0038|pta0003.pta001|pta0003.pta007|pta0003.pta009|pta0007.pta007|pta0023.pta001')">
                       <xsl:text>GCS-Retrodigitalisate</xsl:text>
                 </xsl:if>
         </xsl:param>
@@ -285,22 +321,28 @@
                         <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                       </xsl:for-each>
                 </xsl:when>
+                <xsl:when test="$hasEditor = true()">
+                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor">
+                        <xsl:value-of select="current()/tei:persName"/>
+                        <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                      </xsl:for-each>
+                </xsl:when>
                 <xsl:when test="$hasBibl = true()">
-                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:author">
-                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:author">
+                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:author">
+                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:author">
                         <xsl:value-of select="current()/tei:forename"/><xsl:text> </xsl:text><xsl:value-of select="current()/tei:surname"/>
                         <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                       </xsl:for-each>
                   </xsl:if>
-                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:editor">
-                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:bibl/tei:editor">
+                  <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:editor">
+                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl/tei:editor">
                         <xsl:value-of select="current()/tei:forename"/><xsl:text> </xsl:text><xsl:value-of select="current()/tei:surname"/>
                         <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                       </xsl:for-each>
                   </xsl:if>
                 </xsl:when>
               <xsl:otherwise>
-                <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:biblStruct">
+                <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:biblStruct[not(preceding-sibling::tei:head)]">
                   <xsl:for-each select="current()/tei:analytic/tei:author">
                   <xsl:value-of select="./tei:forename"/><xsl:text> </xsl:text><xsl:value-of select="./tei:surname|tei:name"/>
                   <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
