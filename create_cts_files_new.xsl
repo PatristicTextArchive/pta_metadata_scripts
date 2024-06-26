@@ -55,7 +55,7 @@
             <dct:spatial>
               <xsl:value-of select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:creation/tei:placeName/@ref"/>
             </dct:spatial>
-            <xsl:for-each select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:textClass/tei:keywords/tei:term">
+            <xsl:for-each select="/tei:TEI/tei:teiHeader/tei:profileDesc/tei:textClass/tei:keywords[@scheme='#comphistsem']/tei:term">
               <dct:type><xsl:value-of select="normalize-space(.)"/></dct:type>
             </xsl:for-each>
             <xsl:for-each select="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:idno">
@@ -210,9 +210,9 @@
                     </xsl:if>
                     <xsl:value-of select="current()/tei:monogr/tei:title"/>
                     <xsl:text>. </xsl:text>
-                    <xsl:if test="current()/tei:monogr/tei:biblScope[@unit='volume']">
+                    <xsl:if test="current()/tei:monogr/tei:imprint/tei:biblScope[@unit='volume']">
                       <xsl:text> </xsl:text>
-                      <xsl:value-of select="current()/tei:monogr/tei:biblScope[@unit='volume']"/>
+                      <xsl:value-of select="current()/tei:monogr/tei:imprint/tei:biblScope[@unit='volume']"/>
                       <xsl:text>. </xsl:text>
                     </xsl:if>
                     <xsl:if test="current()/tei:monogr/tei:edition">
@@ -227,7 +227,6 @@
                        </xsl:if>
                       <xsl:text>. </xsl:text>
                     </xsl:if>
-                    <xsl:value-of select="current()/tei:monogr/tei:imprint/tei:biblScope[@unit='volume']"/>
                     <xsl:value-of select="current()/tei:monogr/tei:imprint/tei:pubPlace"/>
                     <xsl:text>, </xsl:text>
                     <xsl:value-of select="current()/tei:monogr/tei:imprint/tei:date"/>
@@ -298,7 +297,7 @@
                     <xsl:text>Neueditionen</xsl:text>
                 </xsl:if>
                 <!-- muss jeweils ergänzt werden -->
-                <xsl:if test="matches($textURI, 'pta0012|pta0036|pta0037|pta0038|pta0003.pta001|pta0003.pta007|pta0003.pta009|pta0007.pta007|pta0023.pta001')">
+                <xsl:if test="matches($textURI, 'pta0012|pta0036|pta0037|pta0038|pta0003.pta017|pta0003.pta007|pta0003.pta009|pta0004.pta003|pta0007.pta007|pta0007.pta008|pta0023.pta001')">
                       <xsl:text>GCS-Retrodigitalisate</xsl:text>
                 </xsl:if>
         </xsl:param>
