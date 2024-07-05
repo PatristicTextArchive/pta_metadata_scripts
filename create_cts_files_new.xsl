@@ -119,9 +119,11 @@
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:repository"/>
                     <xsl:text>, </xsl:text>
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:idno"/>
-                    <xsl:text> (</xsl:text>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp"/>
-                    <xsl:text>)</xsl:text>
+                    <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp">
+                      <xsl:text> (</xsl:text>
+                      <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp"/>
+                      <xsl:text>)</xsl:text>
+                    </xsl:if>
                 </xsl:when>
               <!-- Case: from book, either bibl or biblStruct -->
                 <xsl:when test="$hasBibl = true()">
@@ -309,8 +311,8 @@
         <xsl:param name="allEds">
             <xsl:choose>
                 <xsl:when test="$isManuscript = true()">
-                    <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:respStmt">
-                        <xsl:value-of select="current()/tei:persName"/>
+                    <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:respStmt/tei:resp[contains(., 'trans')]">
+                        <xsl:value-of select="current()/following-sibling::tei:persName"/>
                         <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                     </xsl:for-each>
                 </xsl:when>
@@ -408,7 +410,7 @@
                 </dc:creator>
                 <dct:source>
                   <xsl:choose>                
-                  <xsl:when test="$isManuscript = true()">
+                  <xsl:when test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp">
                     <xsl:text>https://pta.bbaw.de/manuscripts/</xsl:text>
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp"/>
                   </xsl:when>
@@ -439,7 +441,7 @@
         </xsl:param>
 
         <xsl:choose>
-            <xsl:when test="contains(string-join($urn, '.'), 'deu') or contains(string-join($urn, '.'), 'eng') or contains(string-join($urn, '.'), 'rum')">
+            <xsl:when test="$isTranslation = true()">
                 <xsl:element name="ti:translation" namespace="http://chs.harvard.edu/xmlns/cts">
                 <xsl:attribute name="xml:lang"><xsl:value-of select="$textFile/tei:TEI/tei:text/tei:body/tei:div/@xml:lang"/></xsl:attribute>
                     <xsl:attribute name="urn"><xsl:value-of select="string-join($urn, '.')"/></xsl:attribute>
@@ -451,6 +453,22 @@
                     <xsl:element name="ti:description" namespace="http://chs.harvard.edu/xmlns/cts">
                         <xsl:attribute name="xml:lang">eng</xsl:attribute>
                         <xsl:copy-of select="$docSource"/>
+                    </xsl:element>
+                    <xsl:copy-of select="$metadata"/>
+                </xsl:element>
+            </xsl:when>
+            <xsl:when test="$isManuscript = true()">
+                <xsl:element name="ti:edition" namespace="http://chs.harvard.edu/xmlns/cts">
+                    <xsl:attribute name="urn"><xsl:value-of select="string-join($urn, '.')"/></xsl:attribute>
+                    <xsl:attribute name="workUrn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
+                    <xsl:element name="ti:label" namespace="http://chs.harvard.edu/xmlns/cts">
+                        <xsl:attribute name="xml:lang">eng</xsl:attribute>
+                        <xsl:value-of select="$markedUpTitle"/>
+                    </xsl:element>
+                    <xsl:element name="ti:description" namespace="http://chs.harvard.edu/xmlns/cts">
+                        <xsl:attribute name="xml:lang">eng</xsl:attribute>
+                        <xsl:copy-of select="$docSource"/><xsl:text>, transcribed by </xsl:text>
+                        <xsl:value-of select="$allEds"/>
                     </xsl:element>
                     <xsl:copy-of select="$metadata"/>
                 </xsl:element>
