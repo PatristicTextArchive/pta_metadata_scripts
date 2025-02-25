@@ -459,6 +459,7 @@
             </xsl:when>
             <xsl:when test="$isManuscript = true()">
                 <xsl:element name="ti:edition" namespace="http://chs.harvard.edu/xmlns/cts">
+                    <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body//tei:div[@type='edition']/@xml:lang"/></xsl:attribute>
                     <xsl:attribute name="urn"><xsl:value-of select="string-join($urn, '.')"/></xsl:attribute>
                     <xsl:attribute name="workUrn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
                     <xsl:element name="ti:label" namespace="http://chs.harvard.edu/xmlns/cts">
@@ -475,6 +476,7 @@
             </xsl:when>
             <xsl:otherwise>
                 <xsl:element name="ti:edition" namespace="http://chs.harvard.edu/xmlns/cts">
+                    <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body//tei:div[@type='edition']/@xml:lang"/></xsl:attribute>
                     <xsl:attribute name="urn"><xsl:value-of select="string-join($urn, '.')"/></xsl:attribute>
                     <xsl:attribute name="workUrn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
                     <xsl:element name="ti:label" namespace="http://chs.harvard.edu/xmlns/cts">
