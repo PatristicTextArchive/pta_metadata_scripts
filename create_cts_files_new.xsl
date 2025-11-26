@@ -19,7 +19,7 @@
         </xsl:param>
         <ti:work>
             <xsl:attribute name="groupUrn"><xsl:value-of select="$urn[1]"/></xsl:attribute>
-            <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body//tei:div[@type='edition']/@xml:lang"/></xsl:attribute>
+            <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body//tei:div[@type='edition' or @type='translation' or @type='commentary']/@xml:lang"/></xsl:attribute>
             <xsl:attribute name="urn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
             <xsl:element name="ti:title">
                 <xsl:attribute name="xml:lang">lat</xsl:attribute>
@@ -84,6 +84,7 @@
         <xsl:param name="isManuscript"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc)"/></xsl:param>
         <xsl:param name="isEdition"><xsl:value-of select="boolean($textFile/tei:TEI/tei:text/tei:body/tei:div/@type='edition')"/></xsl:param>
         <xsl:param name="isTranslation"><xsl:value-of select="boolean($textFile/tei:TEI/tei:text/tei:body/tei:div/@type='translation')"/></xsl:param>
+        <xsl:param name="isCommentary"><xsl:value-of select="boolean($textFile/tei:TEI/tei:text/tei:body/tei:div/@type='commentary')"/></xsl:param>
         <xsl:param name="hasCorresp"><xsl:value-of select="boolean($textFile/tei:TEI/tei:text/tei:body/tei:div/@corresp)"/></xsl:param>
         <xsl:param name="hasBiblStruct"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:biblStruct)"/></xsl:param>
         <xsl:param name="hasBibl"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc//tei:bibl)"/></xsl:param>
@@ -91,6 +92,40 @@
         <xsl:param name="hasEditor"><xsl:value-of select="boolean($textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor)"/></xsl:param>
         <xsl:param name="docSource">
             <xsl:choose>
+              <!-- Case: Transcription -->
+                <xsl:when test="$isManuscript = true()">
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:settlement"/>
+                    <xsl:text>, </xsl:text>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:repository"/>
+                    <xsl:text>, </xsl:text>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:idno"/>
+                    <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp">
+                      <xsl:text> (</xsl:text>
+                      <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp"/>
+                      <xsl:text>)</xsl:text>
+                    </xsl:if>
+                </xsl:when>
+              <!-- Case: Is a commentary or a translation -->
+                <xsl:when test="$isCommentary = true() or $isTranslation = true()">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author">
+                    <xsl:choose>
+                    <xsl:when test="current()/tei:persName">
+                      <xsl:value-of select="current()/tei:persName"/>
+                      <xsl:text> (</xsl:text>
+                      <xsl:value-of select="current()/tei:roleName"/>
+                      <xsl:text>)</xsl:text>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <xsl:value-of select="current()"/>
+                    </xsl:otherwise>
+                    </xsl:choose>
+                    <xsl:if test="current()/tei:orgName">
+                      <xsl:text>, </xsl:text>
+                      <xsl:value-of select="current()/tei:orgName"/>
+                    </xsl:if>
+                    <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                  </xsl:for-each>
+                </xsl:when>
               <!-- Case: Has an editor (= new edition) -->
                 <xsl:when test="$hasEditor = true()">
                   <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor">
@@ -111,19 +146,6 @@
                     </xsl:if>
                     <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                   </xsl:for-each>
-                </xsl:when>
-              <!-- Case: Transcription -->
-                <xsl:when test="$isManuscript = true()">
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:settlement"/>
-                    <xsl:text>, </xsl:text>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:repository"/>
-                    <xsl:text>, </xsl:text>
-                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/tei:idno"/>
-                    <xsl:if test="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp">
-                      <xsl:text> (</xsl:text>
-                      <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:sourceDesc/tei:msDesc/tei:msIdentifier/@corresp"/>
-                      <xsl:text>)</xsl:text>
-                    </xsl:if>
                 </xsl:when>
               <!-- Case: from book, either bibl or biblStruct -->
                 <xsl:when test="$hasBibl = true()">
@@ -267,7 +289,7 @@
             </xsl:choose>
         </xsl:param>
         <xsl:param name="markedUpTitle">
-          <xsl:if test="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/tei:persName"><xsl:value-of select="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/tei:persName"/><xsl:text>: </xsl:text></xsl:if>
+          <xsl:if test="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/tei:persName and not($isCommentary = true() or $isTranslation = true())"><xsl:value-of select="/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/tei:persName"/><xsl:text>: </xsl:text></xsl:if>
           <xsl:value-of select="$title"/>
         </xsl:param>
 
@@ -277,6 +299,9 @@
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:date"/>
                 </xsl:when>
                 <xsl:when test="$isManuscript = true()">
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:date"/>
+                </xsl:when>
+                <xsl:when test="$isCommentary = true()">
                     <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:date"/>
                 </xsl:when>
                 <xsl:when test="$hasBibl = true()">
@@ -315,6 +340,18 @@
                         <xsl:value-of select="current()/following-sibling::tei:persName"/>
                         <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
                     </xsl:for-each>
+                </xsl:when>
+                <xsl:when test="$isCommentary = true()">
+                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author">
+                        <xsl:value-of select="current()/tei:persName"/>
+                        <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                      </xsl:for-each>
+                </xsl:when>
+                <xsl:when test="$isTranslation = true()">
+                        <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author">
+                        <xsl:value-of select="current()/tei:persName"/>
+                        <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                      </xsl:for-each>
                 </xsl:when>
                 <xsl:when test="$isNew = true()">
                         <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor">
@@ -373,6 +410,44 @@
                     <xsl:value-of select="$dateCopyrighted"/><xsl:text>. Version: </xsl:text><xsl:value-of select="substring($gitHash,1,8)"/><xsl:text>, committed on </xsl:text><xsl:value-of select="$lastModified"/><xsl:text>, </xsl:text>
                     <xsl:value-of select="$textURL"/><xsl:text>.</xsl:text>
                 </xsl:when>
+                <xsl:when test="$isTranslation = true()">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author">
+                  <xsl:value-of select="current()/tei:persName"/>
+                  <xsl:text> (</xsl:text>
+                  <xsl:value-of select="current()/tei:roleName"/>
+                  <xsl:text>)</xsl:text>
+                  <xsl:if test="current()/tei:orgName">
+                    <xsl:text>, </xsl:text>
+                    <xsl:value-of select="current()/tei:orgName"/>
+                  </xsl:if>
+                  <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                </xsl:for-each>
+                <xsl:text>, </xsl:text>
+                    <xsl:value-of select="$markedUpTitle"/>
+                    <xsl:text>. </xsl:text>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:distributor/text()"/><xsl:text> </xsl:text>
+                    <xsl:value-of select="$dateCopyrighted"/><xsl:text>. Version: </xsl:text><xsl:value-of select="substring($gitHash,1,8)"/><xsl:text>, committed on </xsl:text><xsl:value-of select="$lastModified"/><xsl:text>, </xsl:text>
+                    <xsl:value-of select="$textURL"/><xsl:text>.</xsl:text>
+                </xsl:when>
+                <xsl:when test="$isCommentary = true()">
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author">
+                  <xsl:value-of select="current()/tei:persName"/>
+                  <xsl:text> (</xsl:text>
+                  <xsl:value-of select="current()/tei:roleName"/>
+                  <xsl:text>)</xsl:text>
+                  <xsl:if test="current()/tei:orgName">
+                    <xsl:text>, </xsl:text>
+                    <xsl:value-of select="current()/tei:orgName"/>
+                  </xsl:if>
+                  <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                </xsl:for-each>
+                <xsl:text>, </xsl:text>
+                    <xsl:value-of select="$markedUpTitle"/>
+                    <xsl:text>. </xsl:text>
+                    <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:publicationStmt/tei:distributor/text()"/><xsl:text> </xsl:text>
+                    <xsl:value-of select="$dateCopyrighted"/><xsl:text>. Version: </xsl:text><xsl:value-of select="substring($gitHash,1,8)"/><xsl:text>, committed on </xsl:text><xsl:value-of select="$lastModified"/><xsl:text>, </xsl:text>
+                    <xsl:value-of select="$textURL"/><xsl:text>.</xsl:text>
+                </xsl:when>
                 <xsl:when test="$isNew = true()">
                   <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:editor">
                   <xsl:value-of select="current()/tei:persName"/>
@@ -406,7 +481,10 @@
             <cpt:structured-metadata xml:lang="deu">
                 <dc:title><xsl:value-of select="$markedUpTitle"/></dc:title>
                 <dc:creator>
-                  <xsl:value-of select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author/tei:persName"/>
+                  <xsl:for-each select="$textFile/tei:TEI/tei:teiHeader/tei:fileDesc/tei:titleStmt/tei:author">
+                    <xsl:value-of select="current()/tei:persName"/>
+                    <xsl:if test="position() != last()"><xsl:text> / </xsl:text></xsl:if>
+                  </xsl:for-each>
                 </dc:creator>
                 <dct:source>
                   <xsl:choose>                
@@ -470,6 +548,22 @@
                         <xsl:attribute name="xml:lang">eng</xsl:attribute>
                         <xsl:copy-of select="$docSource"/><xsl:text>, transcribed by </xsl:text>
                         <xsl:value-of select="$allEds"/>
+                    </xsl:element>
+                    <xsl:copy-of select="$metadata"/>
+                </xsl:element>
+            </xsl:when>
+            <xsl:when test="$isCommentary = true()">
+                <xsl:element name="ti:commentary" namespace="http://chs.harvard.edu/xmlns/cts">
+                    <xsl:attribute name="xml:lang"><xsl:value-of select="/tei:TEI/tei:text/tei:body//tei:div[@type='commentary']/@xml:lang"/></xsl:attribute>
+                    <xsl:attribute name="urn"><xsl:value-of select="string-join($urn, '.')"/></xsl:attribute>
+                    <xsl:attribute name="workUrn"><xsl:value-of select="concat($urn[1], '.', $urn[2])"/></xsl:attribute>
+                    <xsl:element name="ti:label" namespace="http://chs.harvard.edu/xmlns/cts">
+                        <xsl:attribute name="xml:lang">eng</xsl:attribute>
+                        <xsl:value-of select="$markedUpTitle"/>
+                    </xsl:element>
+                    <xsl:element name="ti:description" namespace="http://chs.harvard.edu/xmlns/cts">
+                        <xsl:attribute name="xml:lang">eng</xsl:attribute>
+                        <xsl:copy-of select="$docSource"/>
                     </xsl:element>
                     <xsl:copy-of select="$metadata"/>
                 </xsl:element>
