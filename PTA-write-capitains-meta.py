@@ -1,40 +1,33 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+# %% [markdown]
 # # Preparations
 
-# In[1]:
-
-
+# %%
 # adapted from https://github.com/Formulae-Litterae-Chartae/scripts/tree/master/corpus_transformation_scripts/Formulae
 import glob
 import subprocess
 import shutil
 from os import makedirs, environ, getcwd, remove, rename
 import os.path
-import subprocess
+## workaround for https://github.com/quandyfactory/dicttoxml/issues/91:
+import collections 
+collections.Iterable = collections.abc.Iterable
 
-
-
+# %% [markdown]
 # ## constants
 
-# In[2]:
-
-
-home_dir = environ.get('HOME', '')
-saxon_location = '/usr/share/java/saxon/saxon9ee.jar'
-metadata_transformation_xslt = os.path.expanduser('/Dokumente/projekte/pta-corpus-transformation-scripts/create_cts_files_new.xsl')
-destination_folder = getcwd() # The base folder where the corpus folder structure should be built
-xml_dir = os.path.expanduser('~/Dokumente/projekte/pta_data/data/*/*/pta*.xml')
+# %%
+saxon_location = os.path.expanduser('~/Dokumente/projekte/pta_collator/vendor/saxon9he.jar')
+metadata_transformation_xslt = os.path.expanduser('~/Dokumente/projekte/pta-corpus-transformation-scripts/create_cts_files_new.xsl')
+destination_folder = os.path.expanduser('~/Dokumente/projekte/pta_data/data')
+analyzed_folder = os.path.expanduser('~/Dokumente/projekte/pta_data/analyzed')
+xml_dir = os.path.expanduser('~/Dokumente/projekte/pta_data/data/*/*/pta*.xml') #os.path.expanduser('~\Downloads\pta_data\data\*\*\pta*.xml')
 xml_paths = glob.glob(xml_dir)
 temp_files = []
 
-
+# %% [markdown]
 # # Works
 
-# In[3]:
-
-
+# %%
 ## Versionierung eintragen
 from dicttoxml import dicttoxml
 from xml.dom.minidom import parseString
@@ -44,10 +37,10 @@ for source in sorted(xml_paths, reverse=False):
     corpus_name = os.path.split(source)[1].split(".")[0]
     work_name = os.path.split(source)[1].split(".")[1]
     file_name = os.path.split(source)[1]
-    os.chdir(os.path.expanduser('~/Downloads/pta_data/'))
+    os.path.expanduser('~/Dokumente/projekte/pta_data/'))
     label["urn"] = "urn:cts:pta:"+file_name.rsplit('.', 1)[0]
     try:
-        git = subprocess.check_output(['git', 'log', '-1', '--follow', "--pretty=format:%H,%ad", "--date=short", "data/"+corpus_name+"/"+work_name+"/"+file_name]).decode("utf-8").split(",")
+        git = subprocess.check_output(['git', 'log', '--follow', '-1', "--pretty=format:%H,%ad", "--date=short", "data/"+corpus_name+"/"+work_name+"/"+file_name]).decode("utf-8").split(",")
         label["hash"] = git[0]
         label["date"] = git[1]
     except:
@@ -56,13 +49,10 @@ for source in sorted(xml_paths, reverse=False):
     gitliste.append(label)
 xml = dicttoxml(gitliste)
 dom = parseString(xml)
-with open(os.path.expanduser('~/Documents/projekte/pta-corpus-transformation-scripts/git-commit_liste.xml'), 'w') as file_open:
+with open(os.path.expanduser('~/Dokumente/projekte/pta-corpus-transformation-scripts/git-commit_liste.xml'), 'w') as file_open:
     file_open.write(dom.toprettyxml())
 
-
-# In[4]:
-
-
+# %%
 def sortkey(source):
     if "deu" in os.path.split(source)[1]:
         key = 0
@@ -72,28 +62,28 @@ def sortkey(source):
         key = 2
     elif "Ms" in os.path.split(source)[1]:
         key = 3
-    elif "rum" in os.path.split(source)[1]:
+    elif "com" in os.path.split(source)[1]:
         key = 4
-    elif "xcl" in os.path.split(source)[1]:
+    elif "rum" in os.path.split(source)[1]:
         key = 5
-    elif "lat" in os.path.split(source)[1]:
+    elif "xcl" in os.path.split(source)[1]:
         key = 6
+    elif "lat" in os.path.split(source)[1]:
+        key = 7
     else:
-        key= 7
+        key= 8
     return key
 
-
-# In[5]:
-
-
+# %%
 for source in sorted(xml_paths, key=sortkey, reverse=False):
     corpus_name = os.path.split(source)[1].split(".")[0]
     work_name = os.path.split(source)[1].split(".")[1]
     file_name = os.path.split(source)[1]
-    if not os.path.isdir(destination_folder+"/data/"+corpus_name+"/"+work_name):
-        os.makedirs(destination_folder+"/data/"+corpus_name+"/"+work_name)
-    shutil.copy(source,destination_folder+"/data/"+corpus_name+"/"+work_name)
-    subprocess.run(['java', '-jar',  saxon_location, '{}'.format(source), metadata_transformation_xslt, '-o:{base_folder}/data/{corpus}/{work}/__cts__.xml'.format(base_folder=destination_folder, corpus=corpus_name, work=work_name)])
+    print(file_name)
+    #if not os.path.isdir(destination_folder+"/data/"+corpus_name+"/"+work_name):
+    #    os.makedirs(destination_folder+"/data/"+corpus_name+"/"+work_name)
+    #shutil.copy(source,destination_folder+"/data/"+corpus_name+"/"+work_name)
+    subprocess.run([r'/usr/bin/java', '-jar',  saxon_location, '{}'.format(source), metadata_transformation_xslt, '-o:{base_folder}/{corpus}/{work}/__cts__.xml'.format(base_folder=destination_folder, corpus=corpus_name, work=work_name)])
+    #shutil.copy(destination_folder+"/"+corpus_name+"/"+work_name+"/__cts__.xml",analyzed_folder+"/"+corpus_name+"/"+work_name+"/__cts__.xml")
 
 
-# %%
